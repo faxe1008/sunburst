@@ -4,17 +4,17 @@ mod fjor;
 use std::io::stdout;
 
 use fjor::{
-    canvas::{Canvas, Color},
+    canvas::{Canvas, Color, IntPoint, IntRect},
     ppm,
 };
 
 fn main() {
-    let mut can = Canvas::new(200, 200);
+    let mut can = Canvas::new(500, 500);
 
-    for r in (1..100).step_by(1) {
-        can.draw_circle(0, 0, r, &Color::new(255, 0, 0));
-    }
-    can.draw_line(0, 0, 200, 200, &Color::new(255, 0, 255));
+    can.fill_rect(
+        &IntRect::new(IntPoint::new(0, 0), 500, 500),
+        &Color::new(255, 0, 9),
+    );
     let mut stdout = stdout();
     ppm::PPMExporter::write(&can, &mut stdout);
 }

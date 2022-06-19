@@ -1,3 +1,5 @@
+use std::mem;
+
 pub struct Color {
     pub red: u8,
     pub green: u8,
@@ -10,14 +12,46 @@ impl Color {
     }
 }
 
-pub struct Brush {
-    pub color: Color,
-    pub thickness: usize,
+pub struct IntPoint {
+    pub x: isize,
+    pub y: isize,
 }
 
-impl Brush {
-    pub fn new(color: Color, thickness: usize) -> Self {
-        Brush { color, thickness }
+impl IntPoint {
+    pub fn new(x: isize, y: isize) -> Self {
+        IntPoint { x, y }
+    }
+}
+
+pub struct IntRect {
+    pub location: IntPoint,
+    pub width: isize,
+    pub height: isize,
+}
+
+impl IntRect {
+    pub fn new(mut location: IntPoint, mut width: isize, mut height: isize) -> Self {
+        if width < 0 {
+            location.x += width;
+            width *= -1;
+        }
+        if height < 0 {
+            location.y += height;
+            height *= -1;
+        }
+        IntRect {
+            location,
+            width,
+            height,
+        }
+    }
+
+    pub fn x(&self) -> isize {
+        self.location.x
+    }
+
+    pub fn y(&self) -> isize {
+        self.location.y
     }
 }
 
@@ -52,7 +86,17 @@ impl Canvas {
         3 * (height * self.width + width)
     }
 
-    fn set_pixel(&mut self, width: isize, height: isize, color: &Color) {
+    pub fn clear(&mut self) {
+        unsafe {
+            libc::memset(
+                self.buffer.as_mut_ptr() as _,
+                0,
+                self.buffer.len() * mem::size_of::<u8>(),
+            );
+        }
+    }
+
+    fn set_pixel_internal(&mut self, width: isize, height: isize, color: &Color) {
         if width < 0 || height < 0 {
             return;
         }
@@ -66,16 +110,16 @@ impl Canvas {
     }
 
     /// https://www.geeksforgeeks.org/bresenhams-circle-drawing-algorithm/
-    pub fn draw_circle(&mut self, xc: usize, yc: usize, r: usize, color: &Color) {
-        let mut draw_subsequence_points = |x: isize, y: isize| unsafe {
-            self.set_pixel(xc as isize + x, yc as isize + y, color);
-            self.set_pixel(xc as isize - x, yc as isize + y, color);
-            self.set_pixel(xc as isize + x, yc as isize - y, color);
-            self.set_pixel(xc as isize - x, yc as isize - y, color);
-            self.set_pixel(xc as isize + y, yc as isize + x, color);
-            self.set_pixel(xc as isize - y, yc as isize + x, color);
-            self.set_pixel(xc as isize + y, yc as isize - x, color);
-            self.set_pixel(xc as isize - y, yc as isize - x, color);
+    pub fn draw_circle(&mut self, center: &IntPoint, r: usize, color: &Color) {
+        let mut draw_subsequence_points = |x: isize, y: isize| {
+            self.set_pixel_internal(center.x + x, center.y + y, color);
+            self.set_pixel_internal(center.x - x, center.y + y, color);
+            self.set_pixel_internal(center.x + x, center.y - y, color);
+            self.set_pixel_internal(center.x - x, center.y - y, color);
+            self.set_pixel_internal(center.x + y, center.y + x, color);
+            self.set_pixel_internal(center.x - y, center.y + x, color);
+            self.set_pixel_internal(center.x + y, center.y - x, color);
+            self.set_pixel_internal(center.x - y, center.y - x, color);
         };
 
         let mut x: isize = 0;
@@ -95,13 +139,13 @@ impl Canvas {
     }
 
     /// https://www.geeksforgeeks.org/bresenhams-line-generation-algorithm/
-    pub fn draw_line(&mut self, x1: usize, y1: usize, x2: usize, y2: usize, color: &Color) {
-        let m_new: isize = 2 * (y2 as isize - y1 as isize);
-        let mut slope_error_new: isize = m_new - (x2 as isize - x1 as isize);
-        let mut x = x1 as isize;
-        let mut y = y1 as isize;
-        for _ in x..=x2 as isize {
-            self.set_pixel(x, y, color);
+    pub fn draw_line(&mut self, start: &IntPoint, end: &IntPoint, color: &Color) {
+        let m_new: isize = 2 * (end.y - start.y);
+        let mut slope_error_new: isize = m_new - (end.x - start.x);
+        let mut x = start.x;
+        let mut y = start.y;
+        for _ in x..=end.x {
+            self.set_pixel_internal(x, y, color);
             // Add slope to increment angle formed
             slope_error_new += m_new;
 
@@ -109,9 +153,17 @@ impl Canvas {
             // increment y and update slope error.
             if slope_error_new >= 0 {
                 y += 1;
-                slope_error_new -= 2 * (x2 as isize - x1 as isize);
+                slope_error_new -= 2 * (end.x - start.x);
             }
             x += 1;
+        }
+    }
+
+    pub fn fill_rect(&mut self, rect: &IntRect, color: &Color) {
+        for x in rect.x()..rect.x() + rect.width {
+            for y in rect.y()..rect.y() + rect.height {
+                self.set_pixel_internal(x, y, color);
+            }
         }
     }
 }
