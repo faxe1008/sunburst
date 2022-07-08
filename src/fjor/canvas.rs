@@ -109,6 +109,10 @@ impl Canvas {
         self.buffer[index + 2] = color.blue;
     }
 
+    pub fn set_pixel(&mut self, point: &IntPoint, color: &Color) {
+        self.set_pixel_internal(point.x, point.y, color);
+    }
+
     /// https://www.geeksforgeeks.org/bresenhams-circle-drawing-algorithm/
     pub fn draw_circle(&mut self, center: &IntPoint, r: usize, color: &Color) {
         let mut draw_subsequence_points = |x: isize, y: isize| {
