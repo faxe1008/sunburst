@@ -2,15 +2,18 @@
 
 mod fjor;
 
-use std::sync::Mutex;
+use std::io::stdout;
 
 use fjor::{
     canvas::{Canvas, Color, IntPoint, IntRect},
+    renderer::RendererType::PPM,
     sketch::Sketch,
 };
 
 fn main() {
-    let mut sketch = Sketch::new(1920, 1080);
+    let file = Box::new(stdout());
+
+    let mut sketch = Sketch::new(1920, 1080, PPM(file));
 
     sketch.on_setup = &|canvas: &mut Canvas| {
         canvas.set_color(Color::new(255, 0, 0));
