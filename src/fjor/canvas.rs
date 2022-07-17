@@ -12,6 +12,17 @@ impl Color {
     }
 }
 
+pub struct Brush {
+    pub color: Color,
+    pub size: usize,
+}
+
+impl Brush {
+    pub fn new(color: Color, size: usize) -> Self {
+        Brush { color, size }
+    }
+}
+
 pub struct IntPoint {
     pub x: isize,
     pub y: isize,
@@ -59,6 +70,7 @@ pub struct Canvas {
     width: usize,
     height: usize,
     buffer: Vec<u8>,
+    brush: Brush,
 }
 
 impl Canvas {
@@ -67,6 +79,7 @@ impl Canvas {
             width,
             height,
             buffer: vec![0; width * height * 3],
+            brush: Brush::new(Color::new(0, 0, 0), 1),
         }
     }
 
@@ -80,6 +93,14 @@ impl Canvas {
 
     pub fn raw_buffer(&self) -> &Vec<u8> {
         &self.buffer
+    }
+
+    pub fn set_brush(&mut self, brush: Brush) {
+        self.brush = brush;
+    }
+
+    pub fn set_color(&mut self, color: Color) {
+        self.brush.color = color;
     }
 
     fn cartesian_to_index(&self, width: usize, height: usize) -> usize {
@@ -96,7 +117,7 @@ impl Canvas {
         }
     }
 
-    fn set_pixel_internal(&mut self, width: isize, height: isize, color: &Color) {
+    fn set_pixel_internal(&mut self, width: isize, height: isize) {
         if width < 0 || height < 0 {
             return;
         }
@@ -104,26 +125,26 @@ impl Canvas {
         if index >= self.buffer.len() {
             return;
         }
-        self.buffer[index] = color.red;
-        self.buffer[index + 1] = color.green;
-        self.buffer[index + 2] = color.blue;
+        self.buffer[index] = self.brush.color.red;
+        self.buffer[index + 1] = self.brush.color.green;
+        self.buffer[index + 2] = self.brush.color.blue;
     }
 
-    pub fn set_pixel(&mut self, point: &IntPoint, color: &Color) {
-        self.set_pixel_internal(point.x, point.y, color);
+    pub fn set_pixel(&mut self, point: &IntPoint) {
+        self.set_pixel_internal(point.x, point.y);
     }
 
     /// https://www.geeksforgeeks.org/bresenhams-circle-drawing-algorithm/
-    pub fn draw_circle(&mut self, center: &IntPoint, r: usize, color: &Color) {
+    pub fn draw_circle(&mut self, center: &IntPoint, r: usize) {
         let mut draw_subsequence_points = |x: isize, y: isize| {
-            self.set_pixel_internal(center.x + x, center.y + y, color);
-            self.set_pixel_internal(center.x - x, center.y + y, color);
-            self.set_pixel_internal(center.x + x, center.y - y, color);
-            self.set_pixel_internal(center.x - x, center.y - y, color);
-            self.set_pixel_internal(center.x + y, center.y + x, color);
-            self.set_pixel_internal(center.x - y, center.y + x, color);
-            self.set_pixel_internal(center.x + y, center.y - x, color);
-            self.set_pixel_internal(center.x - y, center.y - x, color);
+            self.set_pixel_internal(center.x + x, center.y + y);
+            self.set_pixel_internal(center.x - x, center.y + y);
+            self.set_pixel_internal(center.x + x, center.y - y);
+            self.set_pixel_internal(center.x - x, center.y - y);
+            self.set_pixel_internal(center.x + y, center.y + x);
+            self.set_pixel_internal(center.x - y, center.y + x);
+            self.set_pixel_internal(center.x + y, center.y - x);
+            self.set_pixel_internal(center.x - y, center.y - x);
         };
 
         let mut x: isize = 0;
@@ -143,13 +164,13 @@ impl Canvas {
     }
 
     /// https://www.geeksforgeeks.org/bresenhams-line-generation-algorithm/
-    pub fn draw_line(&mut self, start: &IntPoint, end: &IntPoint, color: &Color) {
+    pub fn draw_line(&mut self, start: &IntPoint, end: &IntPoint) {
         let m_new: isize = 2 * (end.y - start.y);
         let mut slope_error_new: isize = m_new - (end.x - start.x);
         let mut x = start.x;
         let mut y = start.y;
         for _ in x..=end.x {
-            self.set_pixel_internal(x, y, color);
+            self.set_pixel_internal(x, y);
             // Add slope to increment angle formed
             slope_error_new += m_new;
 
@@ -163,10 +184,10 @@ impl Canvas {
         }
     }
 
-    pub fn fill_rect(&mut self, rect: &IntRect, color: &Color) {
+    pub fn fill_rect(&mut self, rect: &IntRect) {
         for x in rect.x()..rect.x() + rect.width {
             for y in rect.y()..rect.y() + rect.height {
-                self.set_pixel_internal(x, y, color);
+                self.set_pixel_internal(x, y);
             }
         }
     }
