@@ -21,6 +21,7 @@ impl Brush {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct IntPoint {
     pub x: isize,
     pub y: isize,
@@ -32,6 +33,7 @@ impl IntPoint {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct IntRect {
     pub location: IntPoint,
     pub width: isize,
@@ -194,6 +196,19 @@ impl Canvas {
             for y in rect.y()..rect.y() + rect.height {
                 self.set_pixel_internal(x, y);
             }
+        }
+    }
+    pub fn draw_rect(&mut self, rect: &IntRect) {
+        let rect_bottom_y = rect.y() + rect.height;
+        let rect_bottom_x = rect.x() + rect.width;
+        for w in rect.x()..=rect_bottom_x {
+            self.set_pixel_internal(w, rect.y());
+            self.set_pixel_internal(w, rect_bottom_y);
+        }
+
+        for h in rect.y()..=rect_bottom_y {
+            self.set_pixel_internal(rect.x(), h);
+            self.set_pixel_internal(rect_bottom_x, h);
         }
     }
 }
