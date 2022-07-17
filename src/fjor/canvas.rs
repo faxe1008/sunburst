@@ -1,5 +1,3 @@
-use std::mem;
-
 pub struct Color {
     pub red: u8,
     pub green: u8,
@@ -71,6 +69,7 @@ pub struct Canvas {
     height: usize,
     buffer: Vec<u8>,
     brush: Brush,
+    background: Color,
 }
 
 impl Canvas {
@@ -80,6 +79,7 @@ impl Canvas {
             height,
             buffer: vec![0; width * height * 3],
             brush: Brush::new(Color::new(0, 0, 0), 1),
+            background: Color::new(255, 255, 255),
         }
     }
 
@@ -99,6 +99,10 @@ impl Canvas {
         self.brush = brush;
     }
 
+    pub fn set_background(&mut self, color: Color) {
+        self.background = color;
+    }
+
     pub fn set_color(&mut self, color: Color) {
         self.brush.color = color;
     }
@@ -108,12 +112,13 @@ impl Canvas {
     }
 
     pub fn clear(&mut self) {
-        unsafe {
-            libc::memset(
-                self.buffer.as_mut_ptr() as _,
-                0,
-                self.buffer.len() * mem::size_of::<u8>(),
-            );
+        for i in 0..self.buffer.len() {
+            self.buffer[i] = match i % 3 {
+                0 => self.background.red,
+                1 => self.background.green,
+                2 => self.background.blue,
+                _ => panic!("Invalid modulus result"),
+            };
         }
     }
 
