@@ -15,8 +15,9 @@ fn main() {
 
     let mut sketch = Sketch::new(1920, 1080, PPM(file));
 
+
     sketch.on_setup = &|canvas: &mut Canvas| {
-        canvas.set_color(Color::new(255, 0, 0));
+        canvas.set_color(Color::hex("#f0f").unwrap());
     };
 
     sketch.on_update = &|canvas: &mut Canvas, frame: usize| {

@@ -1,14 +1,4 @@
-pub struct Color {
-    pub red: u8,
-    pub green: u8,
-    pub blue: u8,
-}
-
-impl Color {
-    pub fn new(red: u8, green: u8, blue: u8) -> Self {
-        Color { red, green, blue }
-    }
-}
+pub use super::color::Color;
 
 pub struct Brush {
     pub color: Color,
@@ -80,8 +70,8 @@ impl Canvas {
             width,
             height,
             buffer: vec![0; width * height * 3],
-            brush: Brush::new(Color::new(0, 0, 0), 1),
-            background: Color::new(255, 255, 255),
+            brush: Brush::new(Color::rgb(0, 0, 0), 1),
+            background: Color::rgb(255, 255, 255),
         }
     }
 
