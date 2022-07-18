@@ -1,3 +1,7 @@
+use std::cmp::max;
+use std::cmp::min;
+use std::mem::swap;
+
 pub use super::color::Color;
 
 #[derive(Debug, Clone)]
@@ -52,6 +56,11 @@ pub struct Canvas {
     fill: Option<Color>,
     stroke: Option<Color>,
     background: Color,
+}
+
+enum ColorSource {
+    Fill,
+    Stroke,
 }
 
 impl Canvas {
@@ -113,72 +122,97 @@ impl Canvas {
         }
     }
 
-    fn stroke_pixel_internal(&mut self, width: isize, height: isize) {
-        if let Some(color) = self.stroke.as_ref() {
-            if width < 0 || height < 0 {
+    fn set_pixel_internal(&mut self, width: isize, height: isize, color_source: ColorSource) {
+        let color = match color_source {
+            ColorSource::Fill if self.fill.is_some() => self.fill.as_ref().unwrap(),
+            ColorSource::Stroke if self.stroke.is_some() => self.stroke.as_ref().unwrap(),
+            _ => {
                 return;
             }
-            let index = self.cartesian_to_index(width as usize, height as usize);
-            if index >= self.buffer.len() {
-                return;
-            }
-            self.buffer[index] = color.red;
-            self.buffer[index + 1] = color.green;
-            self.buffer[index + 2] = color.blue;
-        }
-    }
+        };
 
-    fn fill_pixel_internal(&mut self, width: isize, height: isize) {
-        if let Some(color) = self.fill.as_ref() {
-            if width < 0 || height < 0 {
-                return;
-            }
-            let index = self.cartesian_to_index(width as usize, height as usize);
-            if index >= self.buffer.len() {
-                return;
-            }
-            self.buffer[index] = color.red;
-            self.buffer[index + 1] = color.green;
-            self.buffer[index + 2] = color.blue;
+        if width < 0 || height < 0 {
+            return;
         }
+        let index = self.cartesian_to_index(width as usize, height as usize);
+        if index >= self.buffer.len() {
+            return;
+        }
+        self.buffer[index] = color.red;
+        self.buffer[index + 1] = color.green;
+        self.buffer[index + 2] = color.blue;
     }
 
     pub fn draw_point(&mut self, point: &IntPoint) {
-        self.stroke_pixel_internal(point.x, point.y);
-    }
-
-    pub fn draw_circle(&mut self, center: &IntPoint, r: usize) {
-        let r_sq = r as isize * r as isize;
-        for x in -1 * r as isize..r as isize {
-            let f = (r_sq - x * x) as f32;
-            let height = f.sqrt() as isize;
-            let x_coor = x + center.x;
-            for y in -height..height {
-                self.fill_pixel_internal(x_coor, y + center.y);
-            }
-            self.stroke_pixel_internal(x_coor, height + center.y);
-            self.stroke_pixel_internal(x_coor, -height + center.y);
-        }
+        self.set_pixel_internal(point.x, point.y, ColorSource::Stroke);
     }
 
     /// https://www.geeksforgeeks.org/bresenhams-line-generation-algorithm/
     pub fn draw_line(&mut self, start: &IntPoint, end: &IntPoint) {
-        let m_new: isize = 2 * (end.y - start.y);
-        let mut slope_error_new: isize = m_new - (end.x - start.x);
-        let mut x = start.x;
-        let mut y = start.y;
-        for _ in x..=end.x {
-            self.stroke_pixel_internal(x, y);
-            // Add slope to increment angle formed
-            slope_error_new += m_new;
-
-            // Slope error reached limit, time to
-            // increment y and update slope error.
-            if slope_error_new >= 0 {
-                y += 1;
-                slope_error_new -= 2 * (end.x - start.x);
+        // vertical line
+        if start.x == end.x {
+            let min_y = min(start.y, end.y);
+            let max_y = max(start.y, end.y);
+            //TODO: step by stroke weight
+            for y in (min_y..max_y).step_by(1) {
+                self.set_pixel_internal(start.x, y, ColorSource::Stroke);
             }
-            x += 1;
+        }
+
+        // horizontal line
+        if start.y == end.y {
+            let min_x = min(start.x, end.x);
+            let max_x = max(start.x, end.x);
+            //TODO: step by stroke weight
+            for x in (min_x..max_x).step_by(1) {
+                self.set_pixel_internal(x, start.y, ColorSource::Stroke);
+            }
+        }
+
+        // TODO: avoid this clone
+        let mut point1 = start.clone();
+        let mut point2 = end.clone();
+
+        let adx = (point2.x - point1.x).abs();
+        let ady = (point2.y - point1.y).abs();
+        if adx > ady {
+            if point1.x > point2.x {
+                swap(&mut point1, &mut point2);
+            }
+        } else {
+            if point1.y > point2.y {
+                swap(&mut point1, &mut point2);
+            }
+        }
+
+        let dx = point2.x - point1.x;
+        let dy = point2.y - point1.y;
+        let mut error = 0;
+
+        if dx > dy {
+            let y_step = dy.signum();
+            let delta_error = 2 * dy.abs();
+            let mut y = point1.y;
+            for x in point1.x..=point2.x {
+                self.set_pixel_internal(x, y, ColorSource::Stroke);
+                error += delta_error;
+                if error >= dx {
+                    y += y_step;
+                    error -= 2 * dx;
+                }
+            }
+        } else {
+            let x_step = dx.signum();
+            let delta_error = 2 * dx.abs();
+            let mut x = point1.x;
+            for y in point1.y..=point2.y {
+                self.set_pixel_internal(x, y, ColorSource::Stroke);
+                error += delta_error;
+                if error >= dy {
+                    x += x_step;
+                    error -= 2 * dy;
+                }
+            }
         }
     }
 
