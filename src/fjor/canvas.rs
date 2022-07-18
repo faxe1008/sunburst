@@ -217,17 +217,23 @@ impl Canvas {
     }
 
     pub fn draw_rect(&mut self, rect: &IntRect) {
-        let rect_bottom_y = rect.y() + rect.height;
-        let rect_bottom_x = rect.x() + rect.width;
-
-        for x in rect.x()..=rect_bottom_y {
-            for y in rect.y()..=rect_bottom_x {
-                if x == rect.x() || x == rect_bottom_x || y == rect.y() || y == rect_bottom_y {
-                    self.stroke_pixel_internal(x, y);
-                } else {
-                    self.fill_pixel_internal(x, y);
+        if self.fill.is_some() {
+            for x in rect.x()..=rect.x() + rect.width {
+                for y in rect.y()..=rect.y() + rect.height {
+                    self.set_pixel_internal(x, y, ColorSource::Fill);
                 }
             }
+        }
+
+        if self.stroke.is_some() {
+            let top_right = IntPoint::new(rect.x() + rect.width, rect.y());
+            let lower_left = IntPoint::new(rect.x(), rect.y() + rect.height);
+            let lower_right = IntPoint::new(rect.x() + rect.width, rect.y() + rect.height);
+
+            self.draw_line(&rect.location, &top_right);
+            self.draw_line(&top_right, &lower_right);
+            self.draw_line(&lower_right, &lower_left);
+            self.draw_line(&lower_left, &rect.location);
         }
     }
 }
