@@ -1,16 +1,5 @@
 pub use super::color::Color;
 
-pub struct Brush {
-    pub color: Color,
-    pub size: usize,
-}
-
-impl Brush {
-    pub fn new(color: Color, size: usize) -> Self {
-        Brush { color, size }
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct IntPoint {
     pub x: isize,
@@ -60,7 +49,8 @@ pub struct Canvas {
     width: usize,
     height: usize,
     buffer: Vec<u8>,
-    brush: Brush,
+    fill: Option<Color>,
+    stroke: Option<Color>,
     background: Color,
 }
 
@@ -70,7 +60,8 @@ impl Canvas {
             width,
             height,
             buffer: vec![0; width * height * 3],
-            brush: Brush::new(Color::rgb(0, 0, 0), 1),
+            stroke: Some(Color::rgb(0, 0, 0)),
+            fill: None,
             background: Color::rgb(255, 255, 255),
         }
     }
@@ -87,16 +78,24 @@ impl Canvas {
         &self.buffer
     }
 
-    pub fn set_brush(&mut self, brush: Brush) {
-        self.brush = brush;
-    }
-
     pub fn set_background(&mut self, color: Color) {
         self.background = color;
     }
 
-    pub fn set_color(&mut self, color: Color) {
-        self.brush.color = color;
+    pub fn stroke(&mut self, color: Color) {
+        self.stroke.insert(color);
+    }
+
+    pub fn fill(&mut self, color: Color) {
+        self.fill.insert(color);
+    }
+
+    pub fn no_fill(&mut self) {
+        self.fill = None;
+    }
+
+    pub fn no_stroke(&mut self) {
+        self.stroke = None;
     }
 
     fn cartesian_to_index(&self, width: usize, height: usize) -> usize {
@@ -114,49 +113,51 @@ impl Canvas {
         }
     }
 
-    fn set_pixel_internal(&mut self, width: isize, height: isize) {
-        if width < 0 || height < 0 {
-            return;
-        }
-        let index = self.cartesian_to_index(width as usize, height as usize);
-        if index >= self.buffer.len() {
-            return;
-        }
-        self.buffer[index] = self.brush.color.red;
-        self.buffer[index + 1] = self.brush.color.green;
-        self.buffer[index + 2] = self.brush.color.blue;
-    }
-
-    pub fn set_pixel(&mut self, point: &IntPoint) {
-        self.set_pixel_internal(point.x, point.y);
-    }
-
-    /// https://www.geeksforgeeks.org/bresenhams-circle-drawing-algorithm/
-    pub fn draw_circle(&mut self, center: &IntPoint, r: usize) {
-        let mut draw_subsequence_points = |x: isize, y: isize| {
-            self.set_pixel_internal(center.x + x, center.y + y);
-            self.set_pixel_internal(center.x - x, center.y + y);
-            self.set_pixel_internal(center.x + x, center.y - y);
-            self.set_pixel_internal(center.x - x, center.y - y);
-            self.set_pixel_internal(center.x + y, center.y + x);
-            self.set_pixel_internal(center.x - y, center.y + x);
-            self.set_pixel_internal(center.x + y, center.y - x);
-            self.set_pixel_internal(center.x - y, center.y - x);
-        };
-
-        let mut x: isize = 0;
-        let mut y: isize = r as isize;
-        let mut d: isize = 3 - 2 * r as isize;
-        draw_subsequence_points(x, y);
-        while y >= x {
-            x += 1;
-            if d > 0 {
-                y -= 1;
-                d = d + 4 * (x - y) + 10;
-            } else {
-                d = d + 4 * x + 6;
+    fn stroke_pixel_internal(&mut self, width: isize, height: isize) {
+        if let Some(color) = self.stroke.as_ref() {
+            if width < 0 || height < 0 {
+                return;
             }
-            draw_subsequence_points(x, y);
+            let index = self.cartesian_to_index(width as usize, height as usize);
+            if index >= self.buffer.len() {
+                return;
+            }
+            self.buffer[index] = color.red;
+            self.buffer[index + 1] = color.green;
+            self.buffer[index + 2] = color.blue;
+        }
+    }
+
+    fn fill_pixel_internal(&mut self, width: isize, height: isize) {
+        if let Some(color) = self.fill.as_ref() {
+            if width < 0 || height < 0 {
+                return;
+            }
+            let index = self.cartesian_to_index(width as usize, height as usize);
+            if index >= self.buffer.len() {
+                return;
+            }
+            self.buffer[index] = color.red;
+            self.buffer[index + 1] = color.green;
+            self.buffer[index + 2] = color.blue;
+        }
+    }
+
+    pub fn draw_point(&mut self, point: &IntPoint) {
+        self.stroke_pixel_internal(point.x, point.y);
+    }
+
+    pub fn draw_circle(&mut self, center: &IntPoint, r: usize) {
+        let r_sq = r as isize * r as isize;
+        for x in -1 * r as isize..r as isize {
+            let f = (r_sq - x * x) as f32;
+            let height = f.sqrt() as isize;
+            let x_coor = x + center.x;
+            for y in -height..height {
+                self.fill_pixel_internal(x_coor, y + center.y);
+            }
+            self.stroke_pixel_internal(x_coor, height + center.y);
+            self.stroke_pixel_internal(x_coor, -height + center.y);
         }
     }
 
@@ -167,7 +168,7 @@ impl Canvas {
         let mut x = start.x;
         let mut y = start.y;
         for _ in x..=end.x {
-            self.set_pixel_internal(x, y);
+            self.stroke_pixel_internal(x, y);
             // Add slope to increment angle formed
             slope_error_new += m_new;
 
@@ -181,24 +182,18 @@ impl Canvas {
         }
     }
 
-    pub fn fill_rect(&mut self, rect: &IntRect) {
-        for x in rect.x()..rect.x() + rect.width {
-            for y in rect.y()..rect.y() + rect.height {
-                self.set_pixel_internal(x, y);
-            }
-        }
-    }
     pub fn draw_rect(&mut self, rect: &IntRect) {
         let rect_bottom_y = rect.y() + rect.height;
         let rect_bottom_x = rect.x() + rect.width;
-        for w in rect.x()..=rect_bottom_x {
-            self.set_pixel_internal(w, rect.y());
-            self.set_pixel_internal(w, rect_bottom_y);
-        }
 
-        for h in rect.y()..=rect_bottom_y {
-            self.set_pixel_internal(rect.x(), h);
-            self.set_pixel_internal(rect_bottom_x, h);
+        for x in rect.x()..=rect_bottom_y {
+            for y in rect.y()..=rect_bottom_x {
+                if x == rect.x() || x == rect_bottom_x || y == rect.y() || y == rect_bottom_y {
+                    self.stroke_pixel_internal(x, y);
+                } else {
+                    self.fill_pixel_internal(x, y);
+                }
+            }
         }
     }
 }

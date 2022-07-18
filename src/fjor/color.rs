@@ -1,3 +1,4 @@
+#[derive(Clone, Copy, Debug)]
 pub struct Color {
     pub red: u8,
     pub green: u8,
