@@ -236,4 +236,9 @@ impl Canvas {
             self.draw_line(&lower_left, &rect.location);
         }
     }
+
+    pub fn draw_square(&mut self, origin: &IntPoint, size: isize) {
+        let rect = IntRect::new(origin.clone(), size, size);
+        self.draw_rect(&rect);
+    }
 }

@@ -1,6 +1,6 @@
 #![feature(unchecked_math)]
 
-mod fjor;
+extern crate fjor;
 
 use rand::{rngs::ThreadRng, Rng};
 use std::io::stdout;
@@ -13,34 +13,42 @@ use fjor::{
 
 struct SketchState {
     rnd: ThreadRng,
-    rects: Vec<IntRect>,
+    endpoint: IntPoint,
 }
 
 fn state_create() -> SketchState {
     SketchState {
         rnd: rand::thread_rng(),
-        rects: Vec::new(),
+        endpoint: IntPoint::new(155, 1000),
     }
 }
 
 fn setup(sketch: &mut Sketch<SketchState>) {
-    let state = sketch.state_mut();
-
-    state.rects.push(IntRect::new(
-        IntPoint::new(state.rnd.gen_range(0..100), state.rnd.gen_range(0..100)),
-        100,
-        100,
-    ));
+    sketch.canvas_mut().fill(Color::rgb(255, 0, 0));
+    sketch.canvas_mut().clear();
 }
 
-fn update(state: &mut SketchState) {}
+fn clamp<T>(v: T, min: T, max: T) -> T
+where
+    T: PartialOrd,
+{
+    if v < min {
+        min
+    } else if v > max {
+        max
+    } else {
+        v
+    }
+}
+
+fn update(state: &mut SketchState) {
+    state.endpoint.y = (state.endpoint.y + 10) % 1000;
+}
 
 fn draw(canvas: &mut Canvas, state: &SketchState) {
     canvas.clear();
-    canvas.no_fill();
-    for rect in &state.rects {
-        canvas.draw_rect(rect);
-    }
+
+    canvas.draw_square(&state.endpoint, 10);
 }
 
 fn main() {
@@ -48,7 +56,7 @@ fn main() {
 
     let mut sketch = Sketch::new(state_create)
         .size(1000, 1000)
-        .fps(10)
+        .fps(6)
         .renderer(PPM(file))
         .setup(setup)
         .update(update)

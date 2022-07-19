@@ -2,9 +2,8 @@ use super::{
     canvas::Canvas,
     renderer::{PPMRenderer, Renderer, RendererType, RendererType::PPM},
 };
-use std::{thread, io::stdout};
 use std::time::{Duration, Instant};
-
+use std::{io::stdout, thread};
 
 pub type StateFn<State> = fn() -> State;
 
@@ -14,12 +13,12 @@ pub type UpdateSketchFn<State> = fn(&mut State);
 
 pub type DrawSketchFn<State> = fn(&mut Canvas, &State);
 
-
 pub struct Sketch<State> {
     canvas: Canvas,
     state: State,
     frame: usize,
     frame_time: isize,
+    delta_time: usize,
     on_setup: Option<SetupSketchFn<State>>,
     on_update: Option<UpdateSketchFn<State>>,
     on_draw: Option<DrawSketchFn<State>>,
@@ -33,6 +32,7 @@ impl<State> Sketch<State> {
             state: state_fn(),
             frame: 1,
             frame_time: 1000 / 30,
+            delta_time: 0,
             on_setup: None,
             on_update: None,
             on_draw: None,
@@ -50,7 +50,7 @@ impl<State> Sketch<State> {
         let renderer = match renderer_type {
             PPM(writer) => PPMRenderer::new(writer),
         };
-        self.renderer.insert(Box::new(renderer));
+        self.renderer = Some(Box::new(renderer));
         self
     }
 
@@ -88,8 +88,12 @@ impl<State> Sketch<State> {
         &self.canvas
     }
 
-    pub fn frame(&self) -> usize {
+    pub fn frameCount(&self) -> usize {
         self.frame
+    }
+
+    pub fn deltaTime(&self) -> usize {
+        self.delta_time
     }
 
     pub fn run(mut self) {
@@ -114,8 +118,9 @@ impl<State> Sketch<State> {
             }
             self.frame = self.frame.wrapping_add(1);
 
-            let current_frame_time = timer.elapsed().as_millis() - start;
-            let remaining_time = self.frame_time - current_frame_time as isize;
+            self.delta_time = (timer.elapsed().as_millis() - start) as usize;
+            let remaining_time = self.frame_time - self.delta_time as isize;
+
             if remaining_time > 10 {
                 thread::sleep(Duration::from_millis(remaining_time as u64));
             }

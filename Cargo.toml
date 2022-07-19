@@ -3,7 +3,13 @@ name = "fjor"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "fjor"
+path = "src/lib.rs"
+
+[[bin]]
+name = "simple_ppm"
+path = "examples/simple_ppm/main.rs"
 
 [dependencies]
 hex = "0.4.3"
