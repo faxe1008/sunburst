@@ -1,53 +1,13 @@
+use crate::path::PathSegment;
+
 pub use super::color::Color;
+pub use super::path::Path;
+pub use super::primitives::{IntPoint, IntRect};
+
 use noto_sans_mono_bitmap::{get_bitmap, get_bitmap_width, BitmapHeight};
 use std::cmp::max;
 use std::cmp::min;
 use std::mem::swap;
-
-#[derive(Debug, Clone)]
-pub struct IntPoint {
-    pub x: isize,
-    pub y: isize,
-}
-
-impl IntPoint {
-    pub fn new(x: isize, y: isize) -> Self {
-        IntPoint { x, y }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct IntRect {
-    pub location: IntPoint,
-    pub width: isize,
-    pub height: isize,
-}
-
-impl IntRect {
-    pub fn new(mut location: IntPoint, mut width: isize, mut height: isize) -> Self {
-        if width < 0 {
-            location.x += width;
-            width *= -1;
-        }
-        if height < 0 {
-            location.y += height;
-            height *= -1;
-        }
-        IntRect {
-            location,
-            width,
-            height,
-        }
-    }
-
-    pub fn x(&self) -> isize {
-        self.location.x
-    }
-
-    pub fn y(&self) -> isize {
-        self.location.y
-    }
-}
 
 pub enum FontWeight {
     Light,
@@ -322,6 +282,24 @@ impl Canvas {
                 }
             }
             y_origin += bitmap_height as isize;
+        }
+    }
+
+    pub fn draw_path(&mut self, path: &Path) {
+        if self.stroke.is_some() {
+            let mut cursor = IntPoint::new(0, 0);
+
+            for segment in path.segments() {
+                match segment {
+                    PathSegment::MoveTo(pt) => {
+                        cursor = pt.clone();
+                    }
+                    PathSegment::LineTo(pt) => {
+                        self.draw_line(&cursor, pt);
+                        cursor = pt.clone();
+                    }
+                }
+            }
         }
     }
 }

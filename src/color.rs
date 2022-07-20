@@ -40,8 +40,9 @@ impl Color {
         let lerp_component = |start: u8, end: u8, amount: f32| -> u8 {
             let dx = end as f32 - start as f32;
             let r = start as f32 + dx * amount;
-            clamp(r, 0.0, 255.0) as u8
+            clamp(r, 0.0, 254.0) as u8
         };
+
         Color::rgb(
             lerp_component(self.red, to.red, amount),
             lerp_component(self.green, to.green, amount),
