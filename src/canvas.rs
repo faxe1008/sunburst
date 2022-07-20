@@ -76,7 +76,6 @@ pub struct Canvas {
     buffer: Vec<u8>,
     fill: Option<Color>,
     stroke: Option<Color>,
-    stroke_weight: usize,
     background: Color,
     text_style: TextStyle,
 }
@@ -93,7 +92,6 @@ impl Canvas {
             height,
             buffer: vec![0; width * height * 3],
             stroke: Some(Color::rgb(0, 0, 0)),
-            stroke_weight: 1,
             fill: None,
             background: Color::rgb(255, 255, 255),
             text_style: TextStyle::new(16, FontWeight::Regular),
@@ -281,7 +279,7 @@ impl Canvas {
     }
 
     pub fn draw_text(&mut self, origin: &IntPoint, msg: &str) {
-        if self.stroke.is_none() {
+        if self.fill.is_none() {
             return;
         }
 
@@ -322,7 +320,7 @@ impl Canvas {
 
                         // TODO: blitting with opacity
                         if *intensity > 80 {
-                            self.set_pixel_from_color_source(x, y, ColorSource::Stroke);
+                            self.set_pixel_from_color_source(x, y, ColorSource::Fill);
                         }
                     }
                 }
