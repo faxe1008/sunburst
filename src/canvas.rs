@@ -2,6 +2,10 @@ use std::cmp::max;
 use std::cmp::min;
 use std::mem::swap;
 
+use noto_sans_mono_bitmap::get_bitmap;
+use noto_sans_mono_bitmap::get_bitmap_width;
+use noto_sans_mono_bitmap::BitmapHeight;
+
 pub use super::color::Color;
 
 #[derive(Debug, Clone)]
@@ -49,13 +53,32 @@ impl IntRect {
     }
 }
 
+pub enum FontWeight {
+    Light,
+    Regular,
+    Bold,
+}
+
+pub struct TextStyle {
+    weight: FontWeight,
+    size: usize,
+}
+
+impl TextStyle {
+    pub fn new(size: usize, weight: FontWeight) -> Self {
+        TextStyle { size, weight }
+    }
+}
+
 pub struct Canvas {
     width: usize,
     height: usize,
     buffer: Vec<u8>,
     fill: Option<Color>,
     stroke: Option<Color>,
+    stroke_weight: usize,
     background: Color,
+    text_style: TextStyle,
 }
 
 enum ColorSource {
@@ -70,8 +93,10 @@ impl Canvas {
             height,
             buffer: vec![0; width * height * 3],
             stroke: Some(Color::rgb(0, 0, 0)),
+            stroke_weight: 1,
             fill: None,
             background: Color::rgb(255, 255, 255),
+            text_style: TextStyle::new(16, FontWeight::Regular),
         }
     }
 
@@ -92,11 +117,11 @@ impl Canvas {
     }
 
     pub fn stroke(&mut self, color: Color) {
-        self.stroke.insert(color);
+        self.stroke = Some(color);
     }
 
     pub fn fill(&mut self, color: Color) {
-        self.fill.insert(color);
+        self.fill = Some(color);
     }
 
     pub fn no_fill(&mut self) {
@@ -105,6 +130,14 @@ impl Canvas {
 
     pub fn no_stroke(&mut self) {
         self.stroke = None;
+    }
+
+    pub fn font_size(&mut self, size: usize) {
+        self.text_style.size = size;
+    }
+
+    pub fn font_weight(&mut self, weight: FontWeight) {
+        self.text_style.weight = weight;
     }
 
     fn cartesian_to_index(&self, width: usize, height: usize) -> usize {
@@ -122,7 +155,12 @@ impl Canvas {
         }
     }
 
-    fn set_pixel_internal(&mut self, width: isize, height: isize, color_source: ColorSource) {
+    fn set_pixel_from_color_source(
+        &mut self,
+        width: isize,
+        height: isize,
+        color_source: ColorSource,
+    ) {
         let color = match color_source {
             ColorSource::Fill if self.fill.is_some() => self.fill.as_ref().unwrap(),
             ColorSource::Stroke if self.stroke.is_some() => self.stroke.as_ref().unwrap(),
@@ -144,7 +182,7 @@ impl Canvas {
     }
 
     pub fn draw_point(&mut self, point: &IntPoint) {
-        self.set_pixel_internal(point.x, point.y, ColorSource::Stroke);
+        self.set_pixel_from_color_source(point.x, point.y, ColorSource::Stroke);
     }
 
     /// https://www.geeksforgeeks.org/bresenhams-line-generation-algorithm/
@@ -155,7 +193,7 @@ impl Canvas {
             let max_y = max(start.y, end.y);
             //TODO: step by stroke weight
             for y in (min_y..max_y).step_by(1) {
-                self.set_pixel_internal(start.x, y, ColorSource::Stroke);
+                self.set_pixel_from_color_source(start.x, y, ColorSource::Stroke);
             }
         }
 
@@ -165,7 +203,7 @@ impl Canvas {
             let max_x = max(start.x, end.x);
             //TODO: step by stroke weight
             for x in (min_x..max_x).step_by(1) {
-                self.set_pixel_internal(x, start.y, ColorSource::Stroke);
+                self.set_pixel_from_color_source(x, start.y, ColorSource::Stroke);
             }
         }
 
@@ -194,7 +232,7 @@ impl Canvas {
             let delta_error = 2 * dy.abs();
             let mut y = point1.y;
             for x in point1.x..=point2.x {
-                self.set_pixel_internal(x, y, ColorSource::Stroke);
+                self.set_pixel_from_color_source(x, y, ColorSource::Stroke);
                 error += delta_error;
                 if error >= dx {
                     y += y_step;
@@ -206,7 +244,7 @@ impl Canvas {
             let delta_error = 2 * dx.abs();
             let mut x = point1.x;
             for y in point1.y..=point2.y {
-                self.set_pixel_internal(x, y, ColorSource::Stroke);
+                self.set_pixel_from_color_source(x, y, ColorSource::Stroke);
                 error += delta_error;
                 if error >= dy {
                     x += x_step;
@@ -220,7 +258,7 @@ impl Canvas {
         if self.fill.is_some() {
             for x in rect.x()..=rect.x() + rect.width {
                 for y in rect.y()..=rect.y() + rect.height {
-                    self.set_pixel_internal(x, y, ColorSource::Fill);
+                    self.set_pixel_from_color_source(x, y, ColorSource::Fill);
                 }
             }
         }
@@ -240,5 +278,56 @@ impl Canvas {
     pub fn draw_square(&mut self, origin: &IntPoint, size: isize) {
         let rect = IntRect::new(origin.clone(), size, size);
         self.draw_rect(&rect);
+    }
+
+    pub fn draw_text(&mut self, origin: &IntPoint, msg: &str) {
+        if self.stroke.is_none() {
+            return;
+        }
+
+        let font_weight = match self.text_style.weight {
+            FontWeight::Light => noto_sans_mono_bitmap::FontWeight::Light,
+            FontWeight::Regular => noto_sans_mono_bitmap::FontWeight::Regular,
+            FontWeight::Bold => noto_sans_mono_bitmap::FontWeight::Bold,
+        };
+
+        let bitmap_height = match self.text_style.size {
+            0..=14 => BitmapHeight::Size14,
+            15..=16 => BitmapHeight::Size16,
+            17..=18 => BitmapHeight::Size18,
+            19..=20 => BitmapHeight::Size20,
+            21..=22 => BitmapHeight::Size22,
+            23..=24 => BitmapHeight::Size24,
+            25..=32 => BitmapHeight::Size32,
+            33..=64 => BitmapHeight::Size64,
+            65..=usize::MAX => BitmapHeight::Size64,
+            _ => BitmapHeight::Size64,
+        };
+        let char_width = get_bitmap_width(font_weight, bitmap_height);
+        let mut y_origin = origin.y;
+
+        let mut lines = msg.split('\n');
+
+        for line in lines {
+            for (char_i, char) in line.chars().enumerate() {
+                let bitmap_char = get_bitmap(char, font_weight, bitmap_height).unwrap_or(
+                    //Fall back to whitespace for unknown char
+                    get_bitmap(' ', font_weight, bitmap_height).unwrap(),
+                );
+
+                for (row_i, row) in bitmap_char.bitmap().iter().enumerate() {
+                    for (col_i, intensity) in row.iter().enumerate() {
+                        let x = origin.x + char_i as isize * char_width as isize + col_i as isize;
+                        let y = y_origin + row_i as isize;
+
+                        // TODO: blitting with opacity
+                        if *intensity > 80 {
+                            self.set_pixel_from_color_source(x, y, ColorSource::Stroke);
+                        }
+                    }
+                }
+            }
+            y_origin += bitmap_height as isize;
+        }
     }
 }

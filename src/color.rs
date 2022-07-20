@@ -1,3 +1,5 @@
+use crate::utils::clamp;
+
 #[derive(Clone, Copy, Debug)]
 pub struct Color {
     pub red: u8,
@@ -38,13 +40,7 @@ impl Color {
         let lerp_component = |start: u8, end: u8, amount: f32| -> u8 {
             let dx = end as f32 - start as f32;
             let r = start as f32 + dx * amount;
-            if r < 0.0 {
-                0
-            } else if r > 255.0 {
-                255
-            } else {
-                r as u8
-            }
+            clamp(r, 0.0, 255.0) as u8
         };
         Color::rgb(
             lerp_component(self.red, to.red, amount),

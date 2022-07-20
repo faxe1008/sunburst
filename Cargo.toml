@@ -14,3 +14,4 @@ path = "examples/simple_ppm/main.rs"
 [dependencies]
 hex = "0.4.3"
 rand = "0.8.5"
+noto-sans-mono-bitmap = "0.1.5"

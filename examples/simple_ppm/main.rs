@@ -56,7 +56,7 @@ fn main() {
 
     let mut sketch = Sketch::new(state_create)
         .size(1000, 1000)
-        .fps(6)
+        .fps(30)
         .renderer(PPM(file))
         .setup(setup)
         .update(update)

@@ -13,6 +13,7 @@ name = "fjor"
 version = "0.1.0"
 dependencies = [
  "hex",
+ "noto-sans-mono-bitmap",
  "rand",
 ]
 
@@ -38,6 +39,12 @@ name = "libc"
 version = "0.2.126"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "349d5a591cd28b49e1d1037471617a32ddcda5731b99419008085f72d5a53836"
+
+[[package]]
+name = "noto-sans-mono-bitmap"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "643bee6617a18c64f5a72ef358a9426d3682dc768db7c320825d3d936e2232d4"
 
 [[package]]
 name = "ppv-lite86"
