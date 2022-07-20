@@ -36,7 +36,7 @@ impl Color {
         Err(())
     }
 
-    pub fn lerpTo(&self, to: &Color, amount: f32) -> Color {
+    pub fn lerp_to(&self, to: &Color, amount: f32) -> Color {
         let lerp_component = |start: u8, end: u8, amount: f32| -> u8 {
             let dx = end as f32 - start as f32;
             let r = start as f32 + dx * amount;

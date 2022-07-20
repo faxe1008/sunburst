@@ -1,12 +1,8 @@
+pub use super::color::Color;
+use noto_sans_mono_bitmap::{get_bitmap, get_bitmap_width, BitmapHeight};
 use std::cmp::max;
 use std::cmp::min;
 use std::mem::swap;
-
-use noto_sans_mono_bitmap::get_bitmap;
-use noto_sans_mono_bitmap::get_bitmap_width;
-use noto_sans_mono_bitmap::BitmapHeight;
-
-pub use super::color::Color;
 
 #[derive(Debug, Clone)]
 pub struct IntPoint {
@@ -304,7 +300,7 @@ impl Canvas {
         let char_width = get_bitmap_width(font_weight, bitmap_height);
         let mut y_origin = origin.y;
 
-        let mut lines = msg.split('\n');
+        let lines = msg.split('\n');
 
         for line in lines {
             for (char_i, char) in line.chars().enumerate() {
