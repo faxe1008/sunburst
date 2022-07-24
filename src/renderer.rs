@@ -28,6 +28,6 @@ impl Renderer for PPMRenderer {
             canvas.height()
         )
         .unwrap();
-        self.writer.write(canvas.raw_buffer()).unwrap();
+        self.writer.write(canvas.as_raw_buffer()).unwrap();
     }
 }

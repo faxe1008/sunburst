@@ -1,4 +1,5 @@
 use crate::path::PathSegment;
+use crate::pixelbuffer::PixelBuffer;
 
 pub use super::color::Color;
 pub use super::path::Path;
@@ -27,9 +28,7 @@ impl TextStyle {
 }
 
 pub struct Canvas {
-    width: usize,
-    height: usize,
-    buffer: Vec<u8>,
+    pixelbuffer: PixelBuffer,
     fill: Option<Color>,
     stroke: Option<Color>,
     background: Color,
@@ -44,9 +43,7 @@ enum ColorSource {
 impl Canvas {
     pub fn new(width: usize, height: usize) -> Self {
         Canvas {
-            width,
-            height,
-            buffer: vec![0; width * height * 3],
+            pixelbuffer: PixelBuffer::new(width, height),
             stroke: Some(Color::rgb(0, 0, 0)),
             fill: None,
             background: Color::rgb(255, 255, 255),
@@ -55,15 +52,15 @@ impl Canvas {
     }
 
     pub fn height(&self) -> usize {
-        self.height
+        self.pixelbuffer.height()
     }
 
     pub fn width(&self) -> usize {
-        self.width
+        self.pixelbuffer.width()
     }
 
-    pub fn raw_buffer(&self) -> &Vec<u8> {
-        &self.buffer
+    pub fn as_raw_buffer(&self) -> &Vec<u8> {
+        &self.pixelbuffer.as_raw_buffer()
     }
 
     pub fn set_background(&mut self, color: Color) {
@@ -94,27 +91,11 @@ impl Canvas {
         self.text_style.weight = weight;
     }
 
-    fn cartesian_to_index(&self, width: usize, height: usize) -> usize {
-        3 * (height * self.width + width)
-    }
-
     pub fn clear(&mut self) {
-        for i in 0..self.buffer.len() {
-            self.buffer[i] = match i % 3 {
-                0 => self.background.red,
-                1 => self.background.green,
-                2 => self.background.blue,
-                _ => panic!("Invalid modulus result"),
-            };
-        }
+        self.pixelbuffer.clear(&self.background);
     }
 
-    fn set_pixel_from_color_source(
-        &mut self,
-        width: isize,
-        height: isize,
-        color_source: ColorSource,
-    ) {
+    fn set_pixel_from_color_source(&mut self, x: isize, y: isize, color_source: ColorSource) {
         let color = match color_source {
             ColorSource::Fill if self.fill.is_some() => self.fill.as_ref().unwrap(),
             ColorSource::Stroke if self.stroke.is_some() => self.stroke.as_ref().unwrap(),
@@ -122,17 +103,7 @@ impl Canvas {
                 return;
             }
         };
-
-        if width < 0 || height < 0 {
-            return;
-        }
-        let index = self.cartesian_to_index(width as usize, height as usize);
-        if index >= self.buffer.len() {
-            return;
-        }
-        self.buffer[index] = color.red;
-        self.buffer[index + 1] = color.green;
-        self.buffer[index + 2] = color.blue;
+        self.pixelbuffer.set_pixel(x, y, color);
     }
 
     pub fn draw_point(&mut self, point: &IntPoint) {
