@@ -44,6 +44,15 @@ impl PixelBuffer {
         self.buffer[index] = *color;
     }
 
+    pub fn at(&self, x: usize, y: usize) -> Option<&Color> {
+        let index = self.cartesian_to_index(x as usize, y as usize);
+        if index >= self.buffer.len() {
+            None
+        } else {
+            Some(&self.buffer[index])
+        }
+    }
+
     pub fn as_raw_buffer(&self) -> &[u8] {
         unsafe {
             std::slice::from_raw_parts(
