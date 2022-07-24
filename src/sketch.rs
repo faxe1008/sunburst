@@ -9,16 +9,21 @@ pub type StateFn<State> = fn() -> State;
 
 pub type SetupSketchFn<State> = fn(&mut Sketch<State>);
 
-pub type UpdateSketchFn<State> = fn(&mut State);
+pub type UpdateSketchFn<State> = fn(&mut State, &SketchMetrics);
 
-pub type DrawSketchFn<State> = fn(&mut Canvas, &State);
+pub type DrawSketchFn<State> = fn(&mut Canvas, &State, &SketchMetrics);
+
+#[derive(Default)]
+pub struct SketchMetrics {
+    pub frame_count: usize,
+    pub delta_time: Duration,
+    pub frames_per_second: usize,
+}
 
 pub struct Sketch<State> {
     canvas: Canvas,
     state: State,
-    frame: usize,
-    frame_time: isize,
-    delta_time: usize,
+    metrics: SketchMetrics,
     on_setup: Option<SetupSketchFn<State>>,
     on_update: Option<UpdateSketchFn<State>>,
     on_draw: Option<DrawSketchFn<State>>,
@@ -30,9 +35,7 @@ impl<State> Sketch<State> {
         let s = Sketch {
             canvas: Canvas::new(800, 800),
             state: state_fn(),
-            frame: 1,
-            frame_time: 1000 / 30,
-            delta_time: 0,
+            metrics: SketchMetrics::default(),
             on_setup: None,
             on_update: None,
             on_draw: None,
@@ -51,11 +54,6 @@ impl<State> Sketch<State> {
             PPM(writer) => PPMRenderer::new(writer),
         };
         self.renderer = Some(Box::new(renderer));
-        self
-    }
-
-    pub fn fps(mut self, fps: usize) -> Self {
-        self.frame_time = 1000 / fps as isize;
         self
     }
 
@@ -89,11 +87,11 @@ impl<State> Sketch<State> {
     }
 
     pub fn frame_count(&self) -> usize {
-        self.frame
+        self.metrics.frame_count
     }
 
-    pub fn delta_time(&self) -> usize {
-        self.delta_time
+    pub fn delta_time(&self) -> Duration {
+        self.metrics.delta_time
     }
 
     pub fn run(mut self) {
@@ -103,27 +101,23 @@ impl<State> Sketch<State> {
 
         let timer = Instant::now();
         loop {
-            let start = timer.elapsed().as_millis();
+            let start = timer.elapsed();
 
             if let Some(ref update_sketch_fn) = self.on_update {
-                update_sketch_fn(&mut self.state);
+                update_sketch_fn(&mut self.state, &self.metrics);
             }
 
             if let Some(ref draw_sketch_fn) = self.on_draw {
-                draw_sketch_fn(&mut self.canvas, &self.state);
+                draw_sketch_fn(&mut self.canvas, &self.state, &self.metrics);
             }
 
             if let Some(ref mut renderer) = self.renderer {
                 renderer.show(&self.canvas);
             }
-            self.frame = self.frame.wrapping_add(1);
-
-            self.delta_time = (timer.elapsed().as_millis() - start) as usize;
-            let remaining_time = self.frame_time - self.delta_time as isize;
-
-            if remaining_time > 10 {
-                thread::sleep(Duration::from_millis(remaining_time as u64));
-            }
+            self.metrics.frame_count = self.metrics.frame_count.wrapping_add(1);
+            self.metrics.delta_time = timer.elapsed() - start;
+            self.metrics.frames_per_second =
+                (1000 as u128 / self.metrics.delta_time.as_millis()) as usize;
         }
     }
 }

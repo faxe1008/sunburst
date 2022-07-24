@@ -8,21 +8,15 @@ use fjor::{
     canvas::{Canvas, Color, FontWeight, IntPoint},
     path::Path,
     renderer::RendererType::PPM,
-    sketch::Sketch,
+    sketch::{Sketch, SketchMetrics},
 };
 
 struct SketchState {
-    distance: f32,
-    path: Path,
-    origin: IntPoint,
+    lerp_amount: f32,
 }
 
 fn state_create() -> SketchState {
-    SketchState {
-        distance: 0.0,
-        path: Path::new(),
-        origin: IntPoint::new(200, 200),
-    }
+    SketchState { lerp_amount: 0.0 }
 }
 
 fn setup(sketch: &mut Sketch<SketchState>) {
@@ -31,25 +25,32 @@ fn setup(sketch: &mut Sketch<SketchState>) {
     sketch.canvas_mut().font_size(33);
 }
 
-fn update(state: &mut SketchState) {
-    state.distance += 0.3;
-
-    if state.distance > PI * 2.0 {
-        state.path.clear();
-        state.distance = 0.0;
+fn update(state: &mut SketchState, metrics: &SketchMetrics) {
+    state.lerp_amount += 0.05;
+    if state.lerp_amount >= 1.0 {
+        state.lerp_amount = 0.0;
     }
-
-    let y = state.origin.y + (state.distance.sin() * RAD) as isize;
-    let x = state.origin.x + (state.distance.cos() * RAD) as isize;
-    state.path.line_to(&IntPoint::new(x, y));
 }
 
-const RAD: f32 = 100.0;
-
-fn draw(canvas: &mut Canvas, state: &SketchState) {
+fn draw(canvas: &mut Canvas, state: &SketchState, metrics: &SketchMetrics) {
     canvas.clear();
 
-    canvas.draw_path(&state.path);
+    let c = Color::lerp_to(
+        &Color::rgb(255, 0, 0),
+        &Color::rgb(0, 0, 255),
+        state.lerp_amount,
+    );
+    canvas.fill(c);
+    canvas.draw_square(&IntPoint::new(50, 50), 100);
+
+    canvas.draw_text(
+        &IntPoint::new(400, 400),
+        &format!(
+            "dt: {}\nfps: {}",
+            metrics.delta_time.as_millis(),
+            metrics.frames_per_second
+        ),
+    );
 }
 
 fn main() {
@@ -57,7 +58,6 @@ fn main() {
 
     let sketch = Sketch::new(state_create)
         .size(1000, 1000)
-        .fps(60)
         .renderer(PPM(file))
         .setup(setup)
         .update(update)
