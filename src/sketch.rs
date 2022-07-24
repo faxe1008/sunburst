@@ -2,7 +2,6 @@ use super::{
     canvas::Canvas,
     renderer::{PPMRenderer, Renderer, RendererType, RendererType::PPM},
 };
-use std::thread;
 use std::time::{Duration, Instant};
 
 pub type StateFn<State> = fn() -> State;

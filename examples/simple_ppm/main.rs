@@ -2,11 +2,10 @@
 
 extern crate fjor;
 
-use std::{f32::consts::PI, io::stdout};
+use std::io::stdout;
 
 use fjor::{
     canvas::{Canvas, Color, FontWeight, IntPoint},
-    path::Path,
     renderer::RendererType::PPM,
     sketch::{Sketch, SketchMetrics},
 };
@@ -25,7 +24,7 @@ fn setup(sketch: &mut Sketch<SketchState>) {
     sketch.canvas_mut().font_size(33);
 }
 
-fn update(state: &mut SketchState, metrics: &SketchMetrics) {
+fn update(state: &mut SketchState, _: &SketchMetrics) {
     state.lerp_amount += 0.05;
     if state.lerp_amount >= 1.0 {
         state.lerp_amount = 0.0;
