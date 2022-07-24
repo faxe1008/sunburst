@@ -1,7 +1,7 @@
 use crate::canvas::Color;
 
 pub struct PixelBuffer {
-    buffer: Vec<u8>,
+    buffer: Vec<Color>,
     width: usize,
     height: usize,
 }
@@ -9,7 +9,7 @@ pub struct PixelBuffer {
 impl PixelBuffer {
     pub fn new(width: usize, height: usize) -> Self {
         PixelBuffer {
-            buffer: vec![255; 3 * width * height],
+            buffer: vec![Color::rgb(255, 255, 255); width * height],
             width,
             height,
         }
@@ -24,15 +24,13 @@ impl PixelBuffer {
     }
 
     pub fn clear(&mut self, color: &Color) {
-        for index in (0..self.buffer.len()).step_by(3) {
-            self.buffer[index] = color.red;
-            self.buffer[index + 1] = color.green;
-            self.buffer[index + 2] = color.blue;
+        for index in 0..self.buffer.len() {
+            self.buffer[index] = *color;
         }
     }
 
     fn cartesian_to_index(&self, width: usize, height: usize) -> usize {
-        3 * (height * self.width + width)
+        height * self.width + width
     }
 
     pub fn set_pixel(&mut self, x: isize, y: isize, color: &Color) {
@@ -43,12 +41,15 @@ impl PixelBuffer {
         if index >= self.buffer.len() {
             return;
         }
-        self.buffer[index] = color.red;
-        self.buffer[index + 1] = color.green;
-        self.buffer[index + 2] = color.blue;
+        self.buffer[index] = *color;
     }
 
-    pub fn as_raw_buffer(&self) -> &Vec<u8> {
-        &self.buffer
+    pub fn as_raw_buffer(&self) -> &[u8] {
+        unsafe {
+            std::slice::from_raw_parts(
+                self.buffer.as_ptr() as *const u8,
+                self.buffer.len() * std::mem::size_of::<Color>(),
+            )
+        }
     }
 }

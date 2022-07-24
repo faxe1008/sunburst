@@ -59,8 +59,8 @@ impl Canvas {
         self.pixelbuffer.width()
     }
 
-    pub fn as_raw_buffer(&self) -> &Vec<u8> {
-        &self.pixelbuffer.as_raw_buffer()
+    pub fn as_raw_buffer(&self) -> &[u8] {
+        self.pixelbuffer.as_raw_buffer()
     }
 
     pub fn set_background(&mut self, color: Color) {
