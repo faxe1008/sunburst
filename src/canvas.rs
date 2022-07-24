@@ -273,4 +273,38 @@ impl Canvas {
             }
         }
     }
+
+    pub fn draw_ellipse(&mut self, center: &IntPoint, width: usize, height: usize) {
+        let h = height as isize;
+        let w = width as isize;
+        let hh = h * h;
+        let ww = w * w;
+        let hhww = hh * ww;
+        let mut x0 = w;
+        let mut dx = 0;
+
+        for x in -w..w {
+            self.set_pixel_from_color_source(center.x + x, center.y, ColorSource::Fill);
+        }
+
+        for y in 1..=h {
+            let mut x1 = x0 - (dx - 1);
+            while x1 > 0 {
+                if x1 * x1 * hh + y * y * ww <= hhww {
+                    break;
+                }
+                x1 -= 1;
+            }
+            dx = x0 - x1;
+            x0 = x1;
+            for x in -(x0 - 1)..x0 {
+                self.set_pixel_from_color_source(center.x + x, center.y - y, ColorSource::Fill);
+                self.set_pixel_from_color_source(center.x + x, center.y + y, ColorSource::Fill);
+            }
+            self.set_pixel_from_color_source(center.x + x0, center.y - y, ColorSource::Stroke);
+            self.set_pixel_from_color_source(center.x + x0, center.y + y, ColorSource::Stroke);
+            self.set_pixel_from_color_source(center.x - x0, center.y + y, ColorSource::Stroke);
+            self.set_pixel_from_color_source(center.x - x0, center.y - y, ColorSource::Stroke);
+        }
+    }
 }
