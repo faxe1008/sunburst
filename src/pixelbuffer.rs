@@ -61,4 +61,13 @@ impl PixelBuffer {
             )
         }
     }
+
+    pub fn as_raw_buffer_mut(&self) -> &mut [u8] {
+        unsafe {
+            std::slice::from_raw_parts_mut(
+                self.buffer.as_ptr() as *mut u8,
+                self.buffer.len() * std::mem::size_of::<Color>(),
+            )
+        }
+    }
 }

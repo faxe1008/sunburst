@@ -1,6 +1,9 @@
+use crate::renderer::SDLRenderer;
+use crate::sketch::RendererType::PPM;
+
 use super::{
     canvas::Canvas,
-    renderer::{PPMRenderer, Renderer, RendererType, RendererType::PPM},
+    renderer::{PPMRenderer, Renderer, RendererType, RendererType::SDL2},
 };
 use std::time::{Duration, Instant};
 
@@ -30,9 +33,9 @@ pub struct Sketch<State> {
 }
 
 impl<State> Sketch<State> {
-    pub fn new(state_fn: StateFn<State>) -> Self {
+    pub fn new(state_fn: StateFn<State>, width: usize, height: usize) -> Self {
         let s = Sketch {
-            canvas: Canvas::new(800, 800),
+            canvas: Canvas::new(width, height),
             state: state_fn(),
             metrics: SketchMetrics::default(),
             on_setup: None,
@@ -43,16 +46,16 @@ impl<State> Sketch<State> {
         s
     }
 
-    pub fn size(mut self, width: usize, height: usize) -> Self {
-        self.canvas = Canvas::new(width, height);
-        self
-    }
-
     pub fn renderer(mut self, renderer_type: RendererType) -> Self {
-        let renderer = match renderer_type {
-            PPM(writer) => PPMRenderer::new(writer),
+        let renderer: Box<dyn Renderer> = match renderer_type {
+            PPM(file) => Box::new(PPMRenderer::new(file)),
+            SDL2(title) => Box::new(SDLRenderer::new(
+                &title,
+                self.canvas.width(),
+                self.canvas.height(),
+            )),
         };
-        self.renderer = Some(Box::new(renderer));
+        self.renderer = Some(renderer);
         self
     }
 
@@ -92,7 +95,6 @@ impl<State> Sketch<State> {
     pub fn delta_time(&self) -> Duration {
         self.metrics.delta_time
     }
-
     pub fn run(mut self) {
         if let Some(setup_sketch_fn) = self.on_setup {
             setup_sketch_fn(&mut self);
@@ -111,7 +113,9 @@ impl<State> Sketch<State> {
             }
 
             if let Some(ref mut renderer) = self.renderer {
-                renderer.show(&self.canvas);
+                if !renderer.update(&self.canvas) {
+                    break;
+                }
             }
             self.metrics.frame_count = self.metrics.frame_count.wrapping_add(1);
             self.metrics.delta_time = timer.elapsed() - start;

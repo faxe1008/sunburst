@@ -63,6 +63,10 @@ impl Canvas {
         self.pixelbuffer.as_raw_buffer()
     }
 
+    pub fn as_raw_buffer_mut(&self) -> &mut [u8] {
+        self.pixelbuffer.as_raw_buffer_mut()
+    }
+
     pub fn set_background(&mut self, color: Color) {
         self.background = color;
     }

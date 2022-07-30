@@ -55,8 +55,7 @@ fn draw(canvas: &mut Canvas, state: &SketchState, metrics: &SketchMetrics) {
 fn main() {
     let file = Box::new(stdout());
 
-    let sketch = Sketch::new(state_create)
-        .size(1000, 1000)
+    let sketch = Sketch::new(state_create, 1000, 1000)
         .renderer(PPM(file))
         .setup(setup)
         .update(update)

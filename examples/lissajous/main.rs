@@ -2,18 +2,18 @@
 
 extern crate fjor;
 
-use std::{f32::consts::PI, io::stdout};
+use std::f32::consts::PI;
 
 use fjor::{
     canvas::{Canvas, Color, IntPoint},
     path::Path,
-    renderer::RendererType::PPM,
+    renderer::RendererType::SDL2,
     sketch::{Sketch, SketchMetrics},
 };
 
-const SPINNER_RADIUS: usize = 15;
-const SPINNER_MARGIN: usize = 1;
-const SPINNER_COUNT: usize = 30;
+const SPINNER_RADIUS: usize = 25;
+const SPINNER_MARGIN: usize = 5;
+const SPINNER_COUNT: usize = 15;
 const INDICATOR_SIZE: isize = 2;
 
 enum SpinnerType {
@@ -212,11 +212,8 @@ fn draw(canvas: &mut Canvas, state: &SketchState, _: &SketchMetrics) {
 }
 
 fn main() {
-    let file = Box::new(stdout());
-
-    let sketch = Sketch::new(state_create)
-        .size(1000, 1000)
-        .renderer(PPM(file))
+    let sketch = Sketch::new(state_create, 900, 900)
+        .renderer(SDL2("Lissajous"))
         .setup(setup)
         .update(update)
         .draw(draw);
