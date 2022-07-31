@@ -15,16 +15,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
-name = "fjor"
-version = "0.1.0"
-dependencies = [
- "hex",
- "noto-sans-mono-bitmap",
- "rand",
- "sdl2",
-]
-
-[[package]]
 name = "getrandom"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -116,6 +106,16 @@ dependencies = [
  "cfg-if",
  "libc",
  "version-compare",
+]
+
+[[package]]
+name = "sunburst"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "noto-sans-mono-bitmap",
+ "rand",
+ "sdl2",
 ]
 
 [[package]]

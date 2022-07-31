@@ -1,10 +1,10 @@
 #![feature(unchecked_math)]
 
-extern crate fjor;
+extern crate sunburst;
 
 use std::f32::consts::PI;
 
-use fjor::{
+use sunburst::{
     canvas::{Canvas, Color, IntPoint},
     path::Path,
     renderer::RendererType::SDL2,

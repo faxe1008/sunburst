@@ -1,10 +1,10 @@
 #![feature(unchecked_math)]
 
-extern crate fjor;
+extern crate sunburst;
 
 use std::io::stdout;
 
-use fjor::{
+use sunburst::{
     canvas::{Canvas, Color, FontWeight, IntPoint},
     renderer::RendererType::PPM,
     sketch::{Sketch, SketchMetrics},
