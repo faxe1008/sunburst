@@ -12,11 +12,6 @@ name = "sunburst"
 path = "src/lib.rs"
 
 [[bin]]
-name = "simple_ppm"
-path = "examples/simple_ppm/main.rs"
-
-
-[[bin]]
 name = "lissajous"
 path = "examples/lissajous/main.rs"
 
