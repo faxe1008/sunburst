@@ -119,8 +119,10 @@ impl<State> Sketch<State> {
             }
             self.metrics.frame_count = self.metrics.frame_count.wrapping_add(1);
             self.metrics.delta_time = timer.elapsed() - start;
-            self.metrics.frames_per_second =
-                (1000 as u128 / self.metrics.delta_time.as_millis()) as usize;
+            if self.metrics.delta_time.as_millis() != 0 {
+                self.metrics.frames_per_second =
+                    (1000 as u128 / self.metrics.delta_time.as_millis()) as usize;
+            }
         }
     }
 }
