@@ -5,7 +5,7 @@ edition = "2021"
 license-file = "LICENSE"
 description = "Simple processing like animation framework with multiple rendering backends"
 repository = "https://github.com/faxe1008/sunburst"
-readme = "README"
+readme = "README.md"
 
 [lib]
 name = "sunburst"
