@@ -15,6 +15,10 @@ path = "src/lib.rs"
 name = "lissajous"
 path = "examples/lissajous/main.rs"
 
+[[bin]]
+name = "lorenz"
+path = "examples/lorenz/main.rs"
+
 [dependencies]
 hex = "0.4.3"
 rand = "0.8.5"
